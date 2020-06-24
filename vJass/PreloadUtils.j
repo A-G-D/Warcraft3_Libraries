@@ -1,51 +1,52 @@
-library PreloadUtils /* v1.4b
+library PreloadUtils /* v1.4d Previously 'ResourcePreloader'
 
 
     */uses /*
 
-    */BJObjectId            /*   http://www.hiveworkshop.com/threads/bjobjectid.287128/
+    */optional BJObjectId   /*   http://www.hiveworkshop.com/threads/bjobjectid.287128/
     */optional Table        /*   http://www.hiveworkshop.com/threads/snippet-new-table.188084/
     */optional UnitRecycler /*   http://www.hiveworkshop.com/threads/snippet-unit-recycler.286701/
 
+
     *///! novjass
 
-    |================|
-    | Written by AGD |
-    |================|
+    [CREDITS]
+    /*
+        AGD - Author
+        IcemanBo - for suggesting further improvements
+        Silvenon - for the sound preloading method
 
-        [CREDITS]
-/*          IcemanBo - for suggesting further improvements
-            Silvenon - for the sound preloading method                            */
+    */
+    |-----|
+    | API |
+    |-----|
 
+        function PreloadUnit takes integer rawcode returns nothing/*
+            - Assigns a certain type of unit to be preloaded
 
-        |-----|
-        | API |
-        |-----|
+      */function PreloadItem takes integer rawcode returns nothing/*
+            - Assigns a certain type of item to be preloaded
 
-            function PreloadUnit takes integer rawcode returns nothing/*
-                - Assigns a certain type of unit to be preloaded
+      */function PreloadAbility takes integer rawcode returns nothing/*
+            - Assigns a certain type of ability to be preloaded
 
-          */function PreloadItem takes integer rawcode returns nothing/*
-                - Assigns a certain type of item to be preloaded
+      */function PreloadEffect takes string modelPath returns nothing/*
+            - Assigns a certain type of effect to be preloaded
 
-          */function PreloadAbility takes integer rawcode returns nothing/*
-                - Assigns a certain type of ability to be preloaded
-
-          */function PreloadEffect takes string modelPath returns nothing/*
-                - Assigns a certain type of effect to be preloaded
-
-          */function PreloadSound takes string soundPath returns nothing/*
-                - Assigns a certain type of sound to be preloaded
+      */function PreloadSound takes string soundPath returns nothing/*
+            - Assigns a certain type of sound to be preloaded
 
 
-          */function PreloadUnitEx takes integer start, integer end returns nothing/*
-                - Assigns a range of unit rawcodes to be preloaded
+      The following functions requires the BJObjectId library:
 
-          */function PreloadItemEx takes integer start, integer end returns nothing/*
-                - Assigns a range of item rawcodes to be preloaded
+      */function PreloadUnitEx takes integer start, integer end returns nothing/*
+            - Assigns a range of units to be preloaded
 
-          */function PreloadAbilityEx takes integer start, integer end returns nothing/*
-                - Assigns a range of ability rawcodes to be preloaded
+      */function PreloadItemEx takes integer start, integer end returns nothing/*
+            - Assigns a range of items to be preloaded
+
+      */function PreloadAbilityEx takes integer start, integer end returns nothing/*
+            - Assigns a range of abilities to be preloaded
 
 
     *///! endnovjass
@@ -56,46 +57,38 @@ library PreloadUtils /* v1.4b
 
     private keyword S
 
-
-    static if DEBUG_MODE then
-        private function Debug takes string msg returns nothing
-            call DisplayTimedTextToPlayer(GetLocalPlayer(), 0, 0, 60, "|CFFFFCC00[Resource Preloader]|R  " + msg)
-        endfunction
-    endif
-
     /*============================================== TextMacros ==============================================*/
 
     //! textmacro PRELOAD_TYPE takes NAME, ARG, TYPE, INDEX, I
     function Preload$NAME$ takes $ARG$ what returns nothing
         static if LIBRARY_Table then
-            if not S.tb[$I$].boolean[$INDEX$] then
-                set S.tb[$I$].boolean[$INDEX$] = true
-                call Do$NAME$Preload(what)
-            debug else
-                debug call Debug("|CFFFF0000Operation Cancelled :|R Entered $TYPE$ data was already preloaded")
+            if S.tb[$I$].boolean[$INDEX$] then
+                return
             endif
+            set S.tb[$I$].boolean[$INDEX$] = true
+            call Do$NAME$Preload(what)
         else
-            if not LoadBoolean(S.tb, $I$, $INDEX$) then
-                call SaveBoolean(S.tb, $I$, $INDEX$, true)
-                call Do$NAME$Preload(what)
-            debug else
-                debug call Debug("|CFFFF0000Operation Cancelled :|R Entered $TYPE$ data was already preloaded")
+            if LoadBoolean(S.tb, $I$, $INDEX$) then
+                return
             endif
+            call SaveBoolean(S.tb, $I$, $INDEX$, true)
+            call Do$NAME$Preload(what)
         endif
     endfunction
     //! endtextmacro
 
     //! textmacro RANGED_PRELOAD_TYPE takes NAME
     function Preload$NAME$Ex takes integer start, integer end returns nothing
-        local BJObjectId this = BJObjectId(start)
-        local BJObjectId last = BJObjectId(end)
+        local boolean forward = start < end
         loop
-            call Preload$NAME$(this)
-            exitwhen this == last
-            if this > last then
-                set this = this.minus_1()
+            call Preload$NAME$(start)
+            exitwhen start == end
+            if forward then
+                set start = BJObjectId(start).plus_1()
+                exitwhen start > end
             else
-                set this = this.plus_1()
+                set start = BJObjectId(start).minus_1()
+                exitwhen start < end
             endif
         endloop
     endfunction
@@ -105,9 +98,9 @@ library PreloadUtils /* v1.4b
 
     private function DoUnitPreload takes integer id returns nothing
         static if LIBRARY_UnitRecycler then
-            call RecycleUnitEx(CreateUnit(Player(15), id, 0, 0, 270))
+            call RecycleUnitEx(CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), id, 0, 0, 270))
         else
-            call RemoveUnit(CreateUnit(Player(15), id, 0, 0, 0))
+            call RemoveUnit(CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), id, 0, 0, 0))
         endif
     endfunction
 
@@ -115,9 +108,8 @@ library PreloadUtils /* v1.4b
         call RemoveItem(UnitAddItemById(S.dummy, id))
     endfunction
 
-    private function DoAbilityPreload takes integer id returns nothing
-        if UnitAddAbility(S.dummy, id) and UnitRemoveAbility(S.dummy, id) then
-        endif
+    private function DoAbilityPreload takes integer id returns boolean
+        return UnitAddAbility(S.dummy, id) and UnitRemoveAbility(S.dummy, id)
     endfunction
 
     private function DoEffectPreload takes string path returns nothing
@@ -138,9 +130,11 @@ library PreloadUtils /* v1.4b
     //! runtextmacro PRELOAD_TYPE("Effect", "string", "effect", "StringHash(what)", "3")
     //! runtextmacro PRELOAD_TYPE("Sound", "string", "sound", "StringHash(what)", "4")
 
+    static if LIBRARY_BJObjectId then
     //! runtextmacro RANGED_PRELOAD_TYPE("Unit")
     //! runtextmacro RANGED_PRELOAD_TYPE("Item")
     //! runtextmacro RANGED_PRELOAD_TYPE("Ability")
+    endif
 
     /*========================================================================================================*/
 
@@ -150,7 +144,7 @@ library PreloadUtils /* v1.4b
             static if LIBRARY_Table then
                 set tb = TableArray[5]
             endif
-            set dummy = CreateUnit(Player(15), 'hpea', 0, 0, 0)
+            set dummy = CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), 'hpea', 0, 0, 0)
             call UnitAddAbility(dummy, 'AInv')
             call UnitAddAbility(dummy, 'Avul')
             call UnitRemoveAbility(dummy, 'Amov')
@@ -174,5 +168,5 @@ library PreloadUtils /* v1.4b
 endlibrary
 
 
-library ResourcePreloader requires PreloadUtils
+library ResourcePreloader uses PreloadUtils then
 endlibrary
