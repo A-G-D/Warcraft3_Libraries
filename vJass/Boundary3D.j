@@ -1,4 +1,4 @@
-library Boundary3D /* v1.0.0 (Alpha)
+library Boundary3D /* v1.0.0 (Alpha).
 
 
     */uses /*
