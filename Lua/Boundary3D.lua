@@ -1,14 +1,12 @@
 --[[ Boundary3D.lua
 
 
-    |-----|
-    | API |
-    |-----|
+    API:
 
 
         Constructors:
 
-            function <type>.()                      (ox, oy, oz, xi, xj, xk, yi, yj, yk, zi, zj, zk, a, b, c)   returns Boundary
+            function <type>()                       (ox, oy, oz, xi, xj, xk, yi, yj, yk, zi, zj, zk, a, b, c)   returns Boundary
                 - Generic constructor - can construct any shape (Example: Boundary.Ellipsoid.Cylinder.Normal(...) )
 
             function Boundary.Sphere.new            (ox, oy, oz, r)                                             returns Boundary
@@ -48,13 +46,14 @@
 
                     - a, b, c:
                         > Distance of the space boundary from the origin in its local x, y, & z axes respectively
-                        > see https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Ellipsoide.svg/800px-Ellipsoide.svg.png 
+                        > See https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Ellipsoide.svg/800px-Ellipsoide.svg.png 
+                          for the convention used
 
                     - a, b, h:
-                        > same as <a, b, c> where a = a, b = b, c = h
+                        > Same as <a, b, c> where a = a, b = b, c = h
 
                     - r:
-                        > same as <a, b, c> where a = r, b = r, c = r
+                        > Same as <a, b, c> where a = r, b = r, c = r
 
 
         Fields:
@@ -63,9 +62,9 @@
                 - Boundary shape type as string
 
 
-        Methods:
+        Functions:
 
-            function Boundary:contains  (x, y, z)                               returns boolean
+            function Boundary:contains  (x, y, z)                               returns true/false
                 - Check if a position vector (x, y, z) is inside the Boundary instance
                 - <y> & <z> are optional arguments
 
@@ -90,6 +89,7 @@
     |--------------|
     | Sample Usage |
     |--------------|
+        (Pseudo code)
 
         local bounds = Boundary.Cone.Normal.new(x, y, z, coneRadius, coneHeight)
 
@@ -102,14 +102,14 @@
 
             -- Damage units inside cone
 
-            if bounds.contains(GetUnitX(u), GetUnitY(u), BlzGetLocalUnitZ(u)) then
+            if bounds.contains(GetUnitX(u), GetUnitY(u), GetUnitZ(u)) then
                 UnitDamageTarget(source, u, coneDamage, true, false, ATTACK_TYPE_HERO, DAMAGE_TYPE_NORMAL, null)
             end
         end
 
         bounds.castTo(Boundary.Sphere) // transforms into a Sphere with a radius equal to <coneRadius>
 
-        debug BJDebugMsg(bounds.typeName) // Prints "Sphere"
+        print(bounds.typeName) // Prints "Sphere"
         GroupEnumUnitsInRange(enumGroup, x, y, radius, null)
         loop
             u = FirstOfGroup(enumGroup)
@@ -118,7 +118,7 @@
 
             -- Damage units inside sphere
 
-            if bounds.contains(GetUnitX(u), GetUnitY(u), BlzGetLocalUnitZ(u)) then
+            if bounds.contains(GetUnitX(u), GetUnitY(u), GetUnitZ(u)) then
                 UnitDamageTarget(source, u, sphereDamage, true, false, ATTACK_TYPE_HERO, DAMAGE_TYPE_NORMAL, null)
             end
         end
@@ -196,10 +196,10 @@ do
         end
 
         function Space:rotate(i, j, k, radians)
-            local axis = Vector{i, j, k}
-            local vx = self.x:new():rotate(axis, radians)
-            local vy = self.y:new():rotate(axis, radians)
-            local vz = self.z:new():rotate(axis, radians)
+            local axis  = Vector{i, j, k}
+            local vx    = self.x:new():rotate(axis, radians)
+            local vy    = self.y:new():rotate(axis, radians)
+            local vz    = self.z:new():rotate(axis, radians)
             self:orient(vx.x, vx.y, vx.z, vy.x, vy.y, vy.z, vz.x, vz.y, vz.z)
             return self
         end
@@ -229,13 +229,13 @@ do
     end
 
     local function getComponent(u, v, w, dx, dy, dz)
-        local x, y, z = calculateProjections(u, v, dx, dy, dz)
+        local x, y, z       = calculateProjections(u, v, dx, dy, dz)
         return x/w.x + y/w.y + z/w.z
     end
 
     local function boundaryAxisContains(l, u, v, w, dx, dy, dz)
-        local x, y, z = calculateProjections(u, v, dx, dy, dz)
-        local r = l*(w.x*x + w.y*y + w.z*z)
+        local x, y, z       = calculateProjections(u, v, dx, dy, dz)
+        local r             = l*(w.x*x + w.y*y + w.z*z)
 
         return x*x + y*y + z*z <= r*r
     end
@@ -507,18 +507,15 @@ do
             x, y, z = x - v.x, y - v.y, z - v.z
 
             v = self.z
-            local dz = x*v.x + y*v.y + z*v.z
-            local rz = vs.z
+            local dz, rz = x*v.x + y*v.y + z*v.z, vs.z
 
             if dz*dz <= rz*rz then
                 v = self.y
-                local dy = x*v.x + y*v.y + z*v.z
-                local ry = vs.y
+                local dy, ry = x*v.x + y*v.y + z*v.z, vs.y
 
                 if dy*dy <= ry*ry then
                     v = self.x
-                    local dx = x*v.x + y*v.y + z*v.z
-                    local rx = vs.x
+                    local dx, rx = x*v.x + y*v.y + z*v.z, vs.x
 
                     return dx*dx < rx*rx
                 end
@@ -563,10 +560,8 @@ do
             local rz = 1 - (x*v.x + y*v.y + z*v.z)/vs.z
 
             if rz >= 0 and rz <= 1 then
-                v = self.x
-                dx = x*v.x + y*v.y + z*v.z
-                v = self.y
-                dy = x*v.x + y*v.y + z*v.z
+                v, dx = self.x, x*v.x + y*v.y + z*v.z
+                v, dy = self.y, x*v.x + y*v.y + z*v.z
 
                 return (dx*dx)/(vs.x*vs.x) + (dy*dy)/(vs.y*vs.y) <= rz*rz
             end
@@ -654,8 +649,8 @@ do
         function shape:contains(x, y, z)
             local v = self.o
             local dx, dy, dz = x - v.x, y - v.y, z - v.z
-            v = self.s
 
+            v = self.s
             return (dx*dx)/(v.x*v.x) + (dy*dy)/(v.y*v.y) + (dz*dz)/(v.z*v.z) <= 1
         end
 
@@ -740,8 +735,7 @@ do
         end
 
         function shape:contains(x, y, z)
-            local v = self.s
-            local w = self.o
+            local v, w = self.s, self.o
 
             return
                 z >= (w.z - v.z) and
@@ -794,8 +788,7 @@ do
             local rz = 1 - (z - vo.z)/vs.z
 
             if rz >= 0 and rz <= 1 then
-                local dx = x - vo.x
-                local dy = y - vo.y
+                local dx, dy = x - vo.x, y - vo.y
 
                 return (dx*dx)/(vs.x*vs.x) + (dy*dy)/(vs.y*vs.y) <= rz*rz
             end
@@ -840,12 +833,10 @@ do
         end
 
         function shape:contains(x, y, z)
-            local v = self.s
-            local w = self.o
+            local v, w = self.s, self.o
 
             if z >= (w.z - v.z) and z <= (w.z + v.z) then
-                local dx = x - w.x
-                local dy = y - w.y
+                local dx, dy = x - w.x, y - w.y
 
                 return (dx*dx)/(v.x*v.x) + (dy*dy)/(v.y*v.y) <= 1
             end
