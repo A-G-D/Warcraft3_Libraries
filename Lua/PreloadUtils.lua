@@ -76,10 +76,10 @@ do
     -- init
     onGlobalInit(function ()
         dummy = CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), FourCC('hpea'), 0, 0, 0)
+        SetUnitY(dummy, GetRectMaxY(world) + 1000)
         UnitAddAbility(dummy, FourCC('AInv'))
         UnitAddAbility(dummy, FourCC('Avul'))
         UnitRemoveAbility(dummy, FourCC('Amov'))
-        SetUnitY(dummy, GetRectMaxY(world) + 1000)
         RemoveRect(world)
     end)
 end
