@@ -1,4 +1,6 @@
---[[ Boundary3D.lua
+--[[ Boundary3D.lua v1.0.0 | https://raw.githubusercontent.com/A-G-D/Warcraft3_Libraries/master/Lua/Boundary3D.lua
+
+    Author: AGD
 
 
     API:
@@ -168,9 +170,9 @@ do
 
         -- Checks if the orientation axes of the bounded space are equivalent to an oblique coordinate system
         function Space:isOblique()
-            return  self.x:scalarProduct(self.y) ~= 0 or
-                    self.x:scalarProduct(self.z) ~= 0 or
-                    self.y:scalarProduct(self.z) ~= 0
+            return  self.x .. self.y ~= 0 or
+                    self.x .. self.z ~= 0 or
+                    self.y .. self.z ~= 0
         end
 
         function Space:orient(xi, xj, xk, yi, yj, yk, zi, zj, zk)
@@ -184,9 +186,9 @@ do
             local vs = self.s
             vs:update(vs.x/rx, vs.y/ry, vs.z/rz)
 
-            vx:scale(rx, rx, rx)
-            vy:scale(ry, ry, ry)
-            vz:scale(rz, rz, rz)
+            vx:scale(rx)
+            vy:scale(ry)
+            vz:scale(rz)
         end
 
         function Space:castTo(boundaryType)
@@ -197,9 +199,9 @@ do
 
         function Space:rotate(i, j, k, radians)
             local axis  = Vector{i, j, k}
-            local vx    = self.x:new():rotate(axis, radians)
-            local vy    = self.y:new():rotate(axis, radians)
-            local vz    = self.z:new():rotate(axis, radians)
+            local vx    = self.x():rotate(axis, radians)
+            local vy    = self.y():rotate(axis, radians)
+            local vz    = self.z():rotate(axis, radians)
             self:orient(vx.x, vx.y, vx.z, vy.x, vy.y, vy.z, vz.x, vz.y, vz.z)
             return self
         end

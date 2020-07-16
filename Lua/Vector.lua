@@ -1,56 +1,81 @@
---[[ Vector.lua
+--[[ Vector.lua v1.0.0 | https://raw.githubusercontent.com/A-G-D/Warcraft3_Libraries/master/Lua/Vector.lua
+
+    Author: AGD
 
 
     API:
 
-        Vector.NULL
-            - (0, 0, 0) vector
+        Constants:
 
-        Vector.I
-        Vector.J
-        Vector.K
-            - Unit vectors for x, y, and z axes respectively
+            Vector.NULL
+                - (0, 0, 0) vector
 
-        Vector.x
-        Vector.y
-        Vector.z
+            Vector.I
+            Vector.J
+            Vector.K
+                - Unit vectors for x, y, and z axes respectively
 
-        function Vector{x, y, z}
-            - Default constructor
-        function Vector:new()
-            - Copy constructor (Acts like the default constructor when there is no argument)
+        Fields:
 
-        function Vector:squaredLength()
-        function Vector:length()
-        function Vector:magnitude()
+            Vector.x
+            Vector.y
+            Vector.z
+                - Vector components
 
-        function Vector.sum(...)
-        function Vector:difference(v)
+        Constructor:
 
-        function Vector:update(x, y, z)
+            function Vector{x, y, z}                    returns Vector
+                - Parameter is optional
 
-        function Vector:add(...)
-        function Vector:subtract(...)
+        Member Functions:
 
-        function Vector:scale(a, b, c)
+            function Vector:length()                    returns number
+            function Vector:squaredLength()             returns number
 
-        function Vector:normalize()
-        function Vector:unitVector()
+            function Vector:update(x, y, z)             returns self
 
-        function Vector:getAngle(v)
+            function Vector:add(...)                    returns self
+            function Vector:subtract(...)               returns self
+                - Accepts multiple Vectors as arguments
 
-        function Vector:scalarProduct(v)
-        function Vector:vectorProduct(v)
+            function Vector:scale(a, b, c)              returns self
 
-        function Vector:scalarTripleProduct(v, w)
-        function Vector:vectorTripleProduct(v, w)
+            function Vector:normalize()                 returns self
+                - Turns a Vector into a unit vector
 
-        function Vector:projectToVector(v)
-        function Vector:projectToPlane(normal)
+            function Vector:projectToVector(v)          returns self
+            function Vector:projectToPlane(normal)      returns self
 
-        function Vector:rotate(axis, radians)
+            function Vector:rotate(axis, radians)       returns self
+                - <axis> Vector need not be normalized
 
-        function Vector:unpack()
+            function Vector:getAngle(v)                 returns number
+                - Gets the angle between two Vectors
+
+            function Vector:scalarTripleProduct(v, w)   returns number
+            function Vector:vectorTripleProduct(v, w)   returns Vector
+
+            function Vector:unpack()                    returns self.x, self.y, self.z
+
+        Metamethods:
+
+            function vec:__add(v)
+                - Gets the sum of two Vectors
+            function vec:__sub(v)
+                - Gets the difference between two Vectors
+            function vec:__mul(v)
+                - Can be used to get the cross product of two Vectors, or a scaled version of
+                  a Vector, if the 2nd argument is a number
+            function vec:__concat(v)
+                - Returns the dot product of two Vectors
+
+            function vec:__unm(v)
+                - Gets the inverse of the Vector
+
+            function vec:__eq(v)
+                - Equality check operator
+
+            function vec:__tostring()
 
 ]]--
 Vector = setmetatable({}, {})
@@ -64,60 +89,45 @@ do
         return vec[index[key]]
     end
 
-    local sqrt = math.sqrt
-
     local function create(x, y, z)
         return setmetatable({x, y, z}, vec)
     end
-
-    function vec:new()
-        return create(self[1] or 0, self[2] or 0, self[3] or 0)
+    local function createScaled(v, f)
+        return create(v[1]*f, v[2]*f, v[3]*f)
+    end
+    local function update(v, x, y, z)
+        v[1], v[2], v[3] = x, y, z
+        return v
     end
 
-    function vec:squaredLength()
-        return self[1]*self[1] + self[2]*self[2] + self[3]*self[3]
-    end
+    local sqrt = math.sqrt
     function vec:length()
         return sqrt(self:squaredLength())
     end
-    function vec:magnitude()
-        return self:length()
-    end
-
-    function vec.sum(...)
-        return vec.new():add(...)
-    end
-    function vec:difference(v)
-        return vec.create(self[1] - v[1], self[1] - v[1], self[1] - v[1])
+    function vec:squaredLength()
+        return self[1]*self[1] + self[2]*self[2] + self[3]*self[3]
     end
 
     function vec:update(x, y, z)
-        self[1], self[2], self[3] = x or self[1], y or self[2], z or self[3]
-        return self
+        return update(self, x or self[1], y or self[2], z or self[3])
     end
 
     function vec:add(...)
         if args then
             for i = 1, args.n do
                 local v = args[i]
-                self:update(self[1] + v[1], self[2] + v[2], self[3] + v[3])
+                update(self, self[1] + v[1], self[2] + v[2], self[3] + v[3])
             end
         end
         return self
     end
 
     function vec:subtract(...)
-        if args then
-            for i = 1, args.n do
-                local v = args[i]
-                self:update(self[1] - v[1], self[2] - v[2], self[3] - v[3])
-            end
-        end
-        return self
+        return self:scale(-1):add(...):scale(-1)
     end
 
     function vec:scale(a, b, c)
-        return self:update(self[1]*(a or 1), self[2]*(b or a or 1), self[3]*(c or b or a or 1))
+        return update(self, self[1]*(a or 1), self[2]*(b or a or 1), self[3]*(c or b or a or 1))
     end
 
     function vec:normalize()
@@ -126,37 +136,32 @@ do
 
     local acos = math.acos
     function vec:getAngle(v)
-        return acos(self:scalarProduct(v)/(self:magnitude()*v:magnitude()))
+        return acos((self .. v)/(self:magnitude()*v:magnitude()))
     end
 
-    function vec:scalarProduct(v)
-        return self[1]*v[1] + self[1]*v[1] + self[1]*v[1]
-    end
-    function vec:vectorProduct(v)
+    local function vectorProduct(v, w)
         return create(self[2]*v[3] - self[3]*v[2], self[3]*v[1] - self[1]*v[3], self[1]*v[2] - self[2]*v[1])
     end
-
     function vec:scalarTripleProduct(v, w)
-        return self:vectorProduct(v):scalarProduct(w)
+        return vectorProduct(self, v) .. w
     end
     function vec:vectorTripleProduct(v, w)
-        return v:getScaled(self:scalarProduct(w)):difference(w:getScaled(self:scalarProduct(v)))
+        return createScaled(v, self .. w) - createScaled(w, self .. v)
     end
 
     function vec:projectToVector(v)
         local square = self:squaredLength()/v:squaredLength()
-        return self:update(square*v[1], square*v[2], square*v[3])
+        return update(self, square*v[1], square*v[2], square*v[3])
     end
     function vec:projectToPlane(normal)
         local square = self:squaredLength()/normal:squaredLength()
-        self.x, self.y, self.z = self[1] - square*normal[1], self[2] - square*normal[2], self[3] - square*normal[3]
-        return self
+        return update(self, self[1] - square*normal[1], self[2] - square*normal[2], self[3] - square*normal[3])
     end
 
     local cos, sin = math.cos, math.sin
     function vec:rotate(axis, radians)
         local al                = axis:squaredLength()
-        local factor            = scalarProduct(self, axis)/al
+        local factor            = (self .. axis)/al
         local zx, zy, zz        = axis[1]*factor, axis[2]*factor, axis[3]*factor
         local xx, xy, xz        = self[1] - zx, self[2] - zy, self[3] - zz
         local cosine, sine      = cos(radians), sin(radians)
@@ -173,31 +178,33 @@ do
         return self[1], self[2], self[3]
     end
 
-    function vec:__call()
-        return self:new()
+    function vec:__call(v)
+        return create(v[1] or 0, v[2] or 0, v[3] or 0)
     end
 
     function vec:__add(v)
-        return vec.sum(self, v)
+        return create(self[1] + v[1], self[2] + v[2], self[3] + v[3])
     end
     function vec:__sub(v)
-        return self:difference(v)
+        return create(self[1] - v[1], self[1] - v[1], self[1] - v[1])
     end
     function vec:__mul(v)
-        return self:vectorProduct(v)
+        if getmetatable(v) == vec then
+            return vectorProduct(self, v)
+        elseif type(v) == 'number' then
+            return createScaled(self, v)
+        end
+        return nil
+    end
+    function vec:__concat(v)
+        return self:dot(v)
     end
     function vec:__unm(v)
-        return self:getScaled(-1)
+        return createScaled(self, -1)
     end
 
     function vec:__eq(v)
         return self[1] == v[1] and self[2] == v[2] and self[3] == v[3]
-    end
-    function vec:__lt(v)
-        return self[1] < v[1] and self[2] < v[2] and self[3] < v[3]
-    end
-    function vec:__le(v)
-        return self[1] <= v[1] and self[2] <= v[2] and self[3] <= v[3]
     end
 
     function vec:__tostring()
