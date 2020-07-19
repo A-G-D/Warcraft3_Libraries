@@ -1,6 +1,8 @@
 --[[ Vector.lua v1.0.0 | https://raw.githubusercontent.com/A-G-D/Warcraft3_Libraries/master/Lua/Vector.lua
 
-    Author: AGD
+
+    Author:
+        - AGD
 
 
     API:

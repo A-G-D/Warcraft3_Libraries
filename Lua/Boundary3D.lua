@@ -1,6 +1,12 @@
 --[[ Boundary3D.lua v1.0.0 | https://raw.githubusercontent.com/A-G-D/Warcraft3_Libraries/master/Lua/Boundary3D.lua
 
-    Author: AGD
+
+    Requires:
+        - Vector.lua | https://raw.githubusercontent.com/A-G-D/Warcraft3_Libraries/master/Lua/Vector.lua
+
+
+    Author:
+        - AGD
 
 
     API:
