@@ -150,11 +150,11 @@ do
     end
 
     function vec:projectToVector(v)
-        local square = self:squaredLength()/v:squaredLength()
+        local square = (self .. v)/v:squaredLength()
         return update(self, square*v[1], square*v[2], square*v[3])
     end
     function vec:projectToPlane(normal)
-        local square = self:squaredLength()/normal:squaredLength()
+        local square = (self .. normal)/normal:squaredLength()
         return update(self, self[1] - square*normal[1], self[2] - square*normal[2], self[3] - square*normal[3])
     end
 
@@ -197,7 +197,7 @@ do
         return nil
     end
     function vec:__concat(v)
-        return self:dot(v)
+        return self[1]*v[1] + self[2]*v[2] + self[3]*v[3]
     end
     function vec:__unm(v)
         return createScaled(self, -1)
