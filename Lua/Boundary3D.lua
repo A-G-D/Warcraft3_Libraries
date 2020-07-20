@@ -231,7 +231,7 @@ do
 
     local function calculateProjections(u, v, dx, dy, dz)
         local rx, ry, rz    = u.x + v.x, u.y + v.y, u.z + v.z
-        local r             = (dx*rx + dy*ry + dz*rz)/rx*rx + ry*ry + rz*rz
+        local r             = (dx*rx + dy*ry + dz*rz)/(rx*rx + ry*ry + rz*rz)
 
         return dx - r*rx, dy - r*ry, dz - r*rz
     end
