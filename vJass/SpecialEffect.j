@@ -1,4 +1,4 @@
-library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/specialeffect.325954/
+library SpecialEffect /* v1.3.0 by AGD | https://www.hiveworkshop.com/threads/specialeffect.325954/
 
 
     */uses /*
@@ -42,21 +42,30 @@ library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/sp
                         call BlzSetSpecialEffectAlpha(sfx.currentHandle(), 0xAA)
                     endloop
 
+          */method killHandle               takes effect effectHandle, real deathTime   returns nothing/*
+                - Kills a specific <effect> handle, playing its death animation
           */method killModel                takes string model, real deathTime          returns nothing/*
-                - Kills a specific model, playing its death animation
-          */method kill                     takes real deathTime, boolean destroyAfter  returns nothing/*
+                - Kills all <effect> handles matching the specific model, playing their death animation
+          */method kill                     takes real deathTime, boolean wantDestroy   returns nothing/*
                 - Kills all models, playing their death animation and destroys this SpecialEffect
-                  instance if <destroyAfter> is true
+                  instance afterwards if <wantDestroy> is true
 
           */method addModel                 takes string model                          returns effect/*
-                - You can't add an already attached model
+                - You can add multiple similar models
+          */method removeHandle             takes effect effectHandle                   returns nothing/*
+                - Removes a specific <effect> handle if found
           */method removeModel              takes string model                          returns nothing/*
+                - Removes all <effect> handles matching the given model
           */method clearModels              takes nothing                               returns nothing/*
-                - removeModel() and clearModels() instantly vanishes the attached models without
-                  playing their death animation
+                - Removes all <effect> handles
+
+                Note:
+                    removeHandle(), removeModel(), and clearModels() instantly vanishes the attached
+                    models without playing their death animation
 
           */method getHandle                takes string model                          returns effect/*
                 - For random access (Uses linear search actually)
+                - Returns the first instance of <effect> handle matching the given model
 
           */method move                     takes real x, real y, real z                returns nothing/*
           */method moveRelative             takes real x, real y, real height           returns nothing/*
@@ -116,13 +125,13 @@ library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/sp
         static if LIBRARY_Alloc then
             implement optional Alloc
         else
-            /*
-            *   Algorithm by MyPad
-            */
             private static thistype array stack
             debug method operator allocated takes nothing returns boolean
                 debug return this > 0 and stack[this] == 0
             debug endmethod
+            /*
+            *   Credits to MyPad for the algorithm
+            */
             static method allocate takes nothing returns thistype
                 local thistype node = stack[0]
                 if stack[node] == 0 then
@@ -184,7 +193,14 @@ library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/sp
         implement InstantiatedList
         implement LinkedListEx
 
-        method getIndex takes string model returns thistype
+        method getHandleIndex takes effect e returns thistype
+            local thistype node = this.next
+            loop
+                exitwhen node == this or node.effect == e
+            endloop
+            return node
+        endmethod
+        method getModelIndex takes string model returns thistype
             local thistype node = this.next
             loop
                 exitwhen node == this or node.model == model
@@ -374,26 +390,38 @@ library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/sp
 
         method getHandle takes string model returns effect
             debug call AssertError(not Node(this).allocated, "getHandle()", "thistype", this, "Invalid node")
-            return this.handle.getIndex(model).effect
+            return this.handle.getModelIndex(model).effect
         endmethod
 
         method addModel takes string model returns effect
-            local EffectHandle node
+            local EffectHandle node = Node.allocate()
             debug call AssertError(not Node(this).allocated, "addModel()", "thistype", this, "Invalid node")
-            if this.getHandle(model) == null then
-                set node = Node.allocate()
-                set node.parent = this.handle
-                set node.model = model
-                call this.handle.pushBack(node)
-                return node.effect
-            endif
-            return null
+            set node.parent = this.handle
+            set node.model = model
+            call EffectHandle.insert(this.handle.getModelIndex(model).prev, node)
+            return node.effect
+        endmethod
+        method removeHandle takes effect e returns nothing
+            local EffectHandle node = this.handle.next
+            debug call AssertError(not Node(this).allocated, "removeHandle()", "thistype", this, "Invalid node")
+            loop
+                exitwhen node == this.handle
+                if node.effect == e then
+                    call EffectHandle.remove(node)
+                    exitwhen true
+                endif
+                set node = node.next
+            endloop
         endmethod
         method removeModel takes string model returns nothing
-            local EffectHandle node = this.handle.getIndex(model)
+            local EffectHandle node = this.handle.getModelIndex(model)
             debug call AssertError(not Node(this).allocated, "removeModel()", "thistype", this, "Invalid node")
             if node != this.handle then
-                call EffectHandle.remove(node)
+                loop
+                    exitwhen node.model != model
+                    call EffectHandle.remove(node)
+                    set node = node.next
+                endloop
             endif
         endmethod
         method clearModels takes nothing returns nothing
@@ -434,7 +462,7 @@ library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/sp
             endif
             call Node(node).deallocate()
         endmethod
-        private static method onExpireClear takes nothing returns nothing
+        private static method onExpireKillRange takes nothing returns nothing
             local DelayedCleanupList list = releaseTimer()
             local thistype node = thistype(list).instance
             set thistype(list).instance = 0
@@ -446,50 +474,80 @@ library SpecialEffect /* v1.2.1 by AGD | https://www.hiveworkshop.com/threads/sp
             call Node(list).deallocate()
         endmethod
 
-        method killModel takes string model, real deathTime returns nothing
-            local thistype node
-            local thistype instance = this.handle.getIndex(model)
-            debug call AssertError(not Node(this).allocated, "killModel()", "thistype", this, "Invalid node")
-            if instance != this.handle then
-                set node = Node.allocate()
-                set node.instance = instance
-                if instance.handle == this.current then
-                    set this.current = this.current.next
-                endif
-                call EffectHandle.move(this.killed.prev, instance.handle)
-                call BlzPlaySpecialEffect(instance.handle.effect, ANIM_TYPE_DEATH)
-                call node.startTimer(deathTime, function thistype.onExpireKill)
-            endif
-        endmethod
-
-        method kill takes real deathTime, boolean wantDestroy returns nothing
+        private method killHandleRange takes string model, real deathTime, boolean wantDestroy returns nothing
             local DelayedCleanupList list
             local DelayedCleanupList temp
             local thistype node
             local thistype next
-
-            debug call AssertError(not Node(this).allocated, "kill()", "thistype", this, "Invalid node")
+            local boolean resetIter = false
 
             if not this.handle.empty then
-                set list = Node.allocate()
-                set thistype(list).instance = this
-                call DelayedCleanupList.makeHead(list)
+                set this.wantDestroy = wantDestroy
 
-                set node = this.handle.next
-                loop
-                    exitwhen node == this.handle
-                    set next = node.handle.next
-                    set temp = Node.allocate()
-                    set temp.effectHandle = node
-                    call list.pushBack(temp)
-                    call EffectHandle.move(this.killed.prev, node)
-                    call BlzPlaySpecialEffect(node.handle.effect, ANIM_TYPE_DEATH)
-                    set node = next
-                endloop
+                if model == null then
+                    set node = this.handle.next
+                else
+                    set node = this.handle.getModelIndex(model)
+                endif
 
-                call this.resetIterator()
-                call thistype(list).startTimer(deathTime, function thistype.onExpireClear)
+                if node != this.handle then
+                    set list = Node.allocate()
+                    set thistype(list).instance = this
+                    call DelayedCleanupList.makeHead(list)
+
+                    loop
+                        exitwhen node == this.handle or (node.handle.model != model and model != null)
+                        set next = node.handle.next
+                        if node.handle == this.current then
+                            set resetIter = true
+                        endif
+                        set temp = Node.allocate()
+                        set temp.effectHandle = node
+                        call list.pushBack(temp)
+                        call EffectHandle.move(this.killed.prev, node)
+                        call BlzPlaySpecialEffect(node.handle.effect, ANIM_TYPE_DEATH)
+                        set node = next
+                    endloop
+
+                    if resetIter then
+                        set this.current = node.handle.prev
+                    endif
+
+                    call thistype(list).startTimer(deathTime, function thistype.onExpireKillRange)
+                endif
+
+            elseif wantDestroy then
+                call this.destroy()
             endif
+        endmethod
+
+        method killHandle takes effect e, real deathTime returns nothing
+            local thistype node
+            local thistype instance
+            debug call AssertError(not Node(this).allocated, "killHandle()", "thistype", this, "Invalid node")
+            if not this.handle.empty then
+                set instance = this.handle.getHandleIndex(e)
+                if instance != this.handle then
+                    set node = Node.allocate()
+                    set node.instance = instance
+                    if instance.handle == this.current then
+                        set this.current = this.current.prev
+                    endif
+                    call EffectHandle.move(this.killed.prev, instance.handle)
+                    call BlzPlaySpecialEffect(instance.handle.effect, ANIM_TYPE_DEATH)
+                    call node.startTimer(deathTime, function thistype.onExpireKill)
+                endif
+            endif
+        endmethod
+
+        method killModel takes string model, real deathTime returns nothing
+            debug call AssertError(not Node(this).allocated, "killModel()", "thistype", this, "Invalid node")
+            call this.killHandleRange(model, deathTime, false)
+        endmethod
+
+        method kill takes real deathTime, boolean wantDestroy returns nothing
+            debug call AssertError(not Node(this).allocated, "kill()", "thistype", this, "Invalid node")
+            call this.killHandleRange(null, deathTime, wantDestroy)
         endmethod
     endstruct
 
