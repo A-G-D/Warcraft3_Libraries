@@ -32,7 +32,7 @@ do
                 OnPreload(callback, v)
             end
         elseif t[arg] == nil then
-            t[arg = 1 -- prevents redundant preloading
+            t[arg] = 1 -- prevents redundant preloading
             callback(arg)
         end
     end
@@ -75,6 +75,7 @@ do
 
     -- init
     onGlobalInit(function ()
+        local world = GetWorldBounds()
         dummy = CreateUnit(Player(PLAYER_NEUTRAL_PASSIVE), FourCC('hpea'), 0, 0, 0)
         SetUnitY(dummy, GetRectMaxY(world) + 1000)
         UnitAddAbility(dummy, FourCC('AInv'))
