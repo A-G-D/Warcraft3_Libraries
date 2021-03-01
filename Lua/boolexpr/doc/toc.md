@@ -3,6 +3,8 @@
 ## Table of Contents
 
 - [API Reference](0_api-reference.md)
+- [Overview](overview.md)
 - [Creating Boolean Expressions](1_creating-expressions.md)
 - [Evaluating Boolean Expressions](2_evaluating-expressions.md)
-- [Glossary](3_glossary.md)
+- [Expression Evaluation Arguments](3_evaluation-arguments.md)
+- [Glossary](4_glossary.md)

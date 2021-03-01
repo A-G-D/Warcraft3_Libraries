@@ -4,4 +4,4 @@
   - Initial Release
 
 - v1.1.0
-  - Added capability for reverse eecution of BoolExprs
+  - Added capability for reverse execution of BoolExprs

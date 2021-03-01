@@ -60,4 +60,4 @@ do
 end
 ```
 
-In this particular case, the ```BoolExpr.AND``` boolean expression operator is used. The user have the full responsibility of ensuring the validity of the passed expressions when using this method of construction since it does not have the built-in checking and assertion provided by the built-in constructors, though consequently, this method has no additional overhead whatsoever as the process is just a simple table creation.
+In this particular case, the ```BoolExpr.AND``` boolean expression operator is used (see [Boolean Expression Operators](0_api-reference.md/#variables)). The user have the full responsibility of ensuring the validity of the passed expressions when using this method of construction since it does not have the built-in checking and assertion, though consequently, this method has no additional overhead whatsoever as the process is just a simple table creation.

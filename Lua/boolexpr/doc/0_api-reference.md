@@ -6,10 +6,11 @@ The following variables are used for manual BoolExpr construction (see [Manually
 
 | Name | Type | Description |
 |---|---|---|
-| ```BoolExpr.DEF``` | integer | Constructed BoolExpr evaluates to true when EF returns true |
+| ```BoolExpr.DEF``` | integer | Constructed BoolExpr evaluates to true when [EF](4_glossary.md) returns true |
 | ```BoolExpr.NOT``` | integer | Constructed BoolExpr evaluates to true when EF returns false |
 | ```BoolExpr.AND``` | integer | Constructed BoolExpr evaluates to true when both the left EF and right EF both return true |
-| ```BoolExpr.OR``` | integer | Constructed BoolExpr evaluates to true when either the left EF or right EF returns true |
+| ```BoolExpr.OR``` | integer | Constructed BoolExpr evaluates to true when the left EF, right EF, or both, return true |
+| ```BoolExpr.XOR``` | integer | Constructed BoolExpr evaluates to true when either the left EF or right EF returns true |
 | ```BoolExpr.ALL``` | integer | Constructed BoolExpr evaluates to true when all the EFs return true |
 | ```BoolExpr.ANY``` | integer | Constructed BoolExpr evaluates to true when at least one EF returns true |
 
@@ -33,6 +34,17 @@ function ([self [, reverse [, ...]]))
 |---|---|---|
 | **#** | **Type** | **Description** |
 | *1* | table | A newly constructed boolean expression |
+
+For tables, the interface is:
+```Lua
+{expression_operator [, ...]}
+```
+
+| Parameters: |||
+|---|---|---|
+| **Name** | **Type** | **Description** |
+| *expression_operator* | integer | The logical operator for evaluating expressions (Value must be one of the variables in the previous section) |
+| *...* | function \| table | The expression(s) which *expression_operator* will evaluate |
 
 <br/>
 
@@ -97,7 +109,64 @@ Constructs a new BoolExpr object, which evaluates to true when both *left_expr* 
 function BoolExpr.Or(left_expr, right_expr)
 ```
 
+Constructs a new BoolExpr object, which evaluates to true when *left_expr*, *right_expr*, or both, return true.
+
+| Parameters: |||
+|---|---|---|
+| **Name** | **Type** | **Description** |
+| *left_expr* | function \| table | An EF, or another BoolExpr, serving as the left expression |
+| *right_expr* | function \| table | An EF, or another BoolExpr, serving as the right expression |
+
+| Return value: |||
+|---|---|---|
+| **#** | **Type** | **Description** |
+| *1* | table | A newly constructed boolean expression |
+
+<br/>
+
+```Lua
+function BoolExpr.Xor(left_expr, right_expr)
+```
+
 Constructs a new BoolExpr object, which evaluates to true when either *left_expr* or *right_expr* returns true.
+
+| Parameters: |||
+|---|---|---|
+| **Name** | **Type** | **Description** |
+| *left_expr* | function \| table | An EF, or another BoolExpr, serving as the left expression |
+| *right_expr* | function \| table | An EF, or another BoolExpr, serving as the right expression |
+
+| Return value: |||
+|---|---|---|
+| **#** | **Type** | **Description** |
+| *1* | table | A newly constructed boolean expression |
+
+<br/>
+
+```Lua
+function BoolExpr.Nand(left_expr, right_expr)
+```
+
+Constructs a new BoolExpr object, which evaluates to true when *left_expr*, *right_expr*, or both, return false.
+
+| Parameters: |||
+|---|---|---|
+| **Name** | **Type** | **Description** |
+| *left_expr* | function \| table | An EF, or another BoolExpr, serving as the left expression |
+| *right_expr* | function \| table | An EF, or another BoolExpr, serving as the right expression |
+
+| Return value: |||
+|---|---|---|
+| **#** | **Type** | **Description** |
+| *1* | table | A newly constructed boolean expression |
+
+<br/>
+
+```Lua
+function BoolExpr.Nor(left_expr, right_expr)
+```
+
+Constructs a new BoolExpr object, which evaluates to true when both *left_expr* and *right_expr* return false.
 
 | Parameters: |||
 |---|---|---|
@@ -148,13 +217,6 @@ Constructs a new BoolExpr object, which evaluates to true when all the EFs in ..
 
 <br/>
 
-- Boolean expression constructors
-- Expressions can take arguments
-- Expressions MUST be callable
-- Can construct nested boolean expressions
-
-<br/>
-
 ## Functions
 
 ```Lua
@@ -167,7 +229,7 @@ Evaluates a BoolExpr
 |---|---|---|
 | **Name** | **Type** | **Description** |
 | *reverse* | boolean | If true, the boolean expression is evaluated in reversed order |
-| *...* | Any \| table | Arguments passed into all the evaluated expressions |
+| *...* | any \| table | Arguments passed into all the evaluated expressions |
 
 | Return value: |||
 |---|---|---|
@@ -187,7 +249,7 @@ function BoolExpr.evaluate(expr, [reverse [, ...]])
 | **Name** | **Type** | **Description** |
 | *expr* | function \| table | BoolExpr or BoolExpr table to be evaluated |
 | *reverse* | boolean | If true, the expressions are evaluated in reversed order |
-| *...* | Any \| table | Arguments passed into all the evaluated expressions |
+| *...* | any \| table | Arguments passed into all the evaluated expressions |
 
 | Return value: |||
 |---|---|---|
