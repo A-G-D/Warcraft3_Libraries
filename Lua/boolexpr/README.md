@@ -11,3 +11,7 @@ There are also additional boolean expression logics namely, the 'All' and 'Any' 
 ## Requirements
 
 - None
+
+## Documentation
+
+- [BoolExpr Documentation](doc/toc.md)

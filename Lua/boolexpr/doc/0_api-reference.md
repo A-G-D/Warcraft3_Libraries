@@ -2,7 +2,7 @@
 
 ## Variables
 
-The following variables are used for manual BoolExpr construction (see [Manually Constructed BoolExpr](1_creating-expressions)).
+The following variables are used for manual BoolExpr construction (see [Manually Constructed BoolExpr](1_creating-expressions.md)).
 
 | Name | Type | Description |
 |---|---|---|
