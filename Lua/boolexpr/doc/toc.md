@@ -7,4 +7,5 @@
 - [Creating Boolean Expressions](1_creating-expressions.md)
 - [Evaluating Boolean Expressions](2_evaluating-expressions.md)
 - [Expression Evaluation Arguments](3_evaluation-arguments.md)
-- [Glossary](4_glossary.md)
+- [Compiling Boolean Expressions](4_compiling-expressions.md)
+- [Glossary](5_glossary.md)
