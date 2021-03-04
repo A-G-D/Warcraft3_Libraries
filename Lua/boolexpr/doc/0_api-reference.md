@@ -10,7 +10,10 @@ The following variables are used for manual BoolExpr construction (see [Manually
 | ```BoolExpr.NOT``` | integer | Constructed BoolExpr evaluates to true when EF returns false |
 | ```BoolExpr.AND``` | integer | Constructed BoolExpr evaluates to true when both the left EF and right EF both return true |
 | ```BoolExpr.OR``` | integer | Constructed BoolExpr evaluates to true when the left EF, right EF, or both, return true |
+| ```BoolExpr.XAND``` | integer | Constructed BoolExpr evaluates to true when either the left EF equals the right EF |
 | ```BoolExpr.XOR``` | integer | Constructed BoolExpr evaluates to true when either the left EF or right EF returns true |
+| ```BoolExpr.NAND``` | integer | Constructed BoolExpr evaluates to true when the left EF, right EF, or both, return false |
+| ```BoolExpr.NOR``` | integer | Constructed BoolExpr evaluates to true when both the left and right EFs return false |
 | ```BoolExpr.ALL``` | integer | Constructed BoolExpr evaluates to true when all the EFs return true |
 | ```BoolExpr.ANY``` | integer | Constructed BoolExpr evaluates to true when at least one EF returns true |
 
@@ -110,6 +113,25 @@ function BoolExpr.Or(left_expr, right_expr)
 ```
 
 Constructs a new BoolExpr object, which evaluates to true when *left_expr*, *right_expr*, or both, return true.
+
+| Parameters: |||
+|---|---|---|
+| **Name** | **Type** | **Description** |
+| *left_expr* | function \| table | An EF, or another BoolExpr, serving as the left expression |
+| *right_expr* | function \| table | An EF, or another BoolExpr, serving as the right expression |
+
+| Return value: |||
+|---|---|---|
+| **#** | **Type** | **Description** |
+| *1* | table | A newly constructed boolean expression |
+
+<br/>
+
+```Lua
+function BoolExpr.Xand(left_expr, right_expr)
+```
+
+Constructs a new BoolExpr object, which evaluates to true when *left_expr* equals *right_expr*.
 
 | Parameters: |||
 |---|---|---|
@@ -255,3 +277,23 @@ function BoolExpr.evaluate(expr, [reverse [, ...]])
 |---|---|---|
 | **#** | **Type** | **Description** |
 | *1* | boolean | Boolean result of the evaluation |
+
+<br/>
+
+```Lua
+function BoolExpr:compile()
+```
+
+Looks for cases in the underneath structure of the boolean expression that can be simplified. For example, a chained AND operator will be changed to an ALL operator and a chained OR will be converted to ANY. These are just examples and there are a lot more cases for simplification aside from these two.
+
+This method does not direcly change the expression itself. Instead, the simplified expression is returned as a new BoolExpr object.
+
+| Parameters: |||
+|---|---|---|
+| **Name** | **Type** | **Description** |
+| *N/A* | *N/A* | *N/A* |
+
+| Return value: |||
+|---|---|---|
+| **#** | **Type** | **Description** |
+| *1* | BoolExpr | A new ```BoolExpr``` representing the simplified expression |
