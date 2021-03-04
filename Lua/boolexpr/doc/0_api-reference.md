@@ -6,7 +6,7 @@ The following variables are used for manual BoolExpr construction (see [Manually
 
 | Name | Type | Description |
 |---|---|---|
-| ```BoolExpr.DEF``` | integer | Constructed BoolExpr evaluates to true when [EF](4_glossary.md) returns true |
+| ```BoolExpr.DEF``` | integer | Constructed BoolExpr evaluates to true when [EF](5_glossary.md) returns true |
 | ```BoolExpr.NOT``` | integer | Constructed BoolExpr evaluates to true when EF returns false |
 | ```BoolExpr.AND``` | integer | Constructed BoolExpr evaluates to true when both the left EF and right EF both return true |
 | ```BoolExpr.OR``` | integer | Constructed BoolExpr evaluates to true when the left EF, right EF, or both, return true |
